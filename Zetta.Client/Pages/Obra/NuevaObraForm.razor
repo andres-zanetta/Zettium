@@ -18,6 +18,57 @@
         <p class="subtitle">Ver, crear y administrar las obras relacionadas a presupuestos y clientes.</p>
     </header>
 
+    <!-- 🔍 FILTROS DE OBRAS -->
+    <div class="filtros-container mb-4 p-3 bg-black rounded shadow-sm">
+        <h5 class="mb-3">🔍 Filtrar Obras</h5>
+
+        <div class="row g-3 align-items-end">
+            <!-- Buscar por cliente -->
+            <div class="col-md-3">
+                <input type="text"
+                       class="form-control bg-dark text-white border-warning"
+                       placeholder="Buscar por cliente..."
+                       value="@FiltroCliente"
+                       @oninput="OnFiltroClienteInput" />
+            </div>
+
+            <!-- Filtrar por estado -->
+            <div class="col-md-3">
+                <select class="form-select bg-dark text-white border-warning"
+                        value="@FiltroEstado"
+                        @onchange="OnFiltroEstadoChanged">
+                    <option value="">Todos los estados</option>
+                    <option value="Iniciada">Iniciada</option>
+                    <option value="EnProceso">EnProceso</option>
+                    <option value="Finalizada">Finalizada</option>
+                </select>
+            </div>
+
+            <!-- Desde -->
+            <div class="col-md-2">
+                <label class="form-label text-white-50 mb-1"></label>
+                        <InputDate TValue="DateTime?" class="form-control bg-dark text-white border-warning"
+                           @bind-Value="FiltroDesde" />
+            </div>
+
+            <!-- Botones + contador -->
+            <div class="col-md-2 d-flex flex-column gap-2">
+                <button class="btn btn-outline-dark w-100 text-white border-white" @onclick="LimpiarFiltros">
+                    Limpiar
+                </button>
+            </div>
+
+            <div class="col-md-2 d-flex flex-column gap-2">
+                <small class="text-white-750 text-center">
+                    @($"{ObrasFiltradas.Count} obras")
+                </small>
+            </div> 
+        </div>
+    </div>
+
+
+
+
     @if (Cargando)
     {
         <div class="text-center my-5">
@@ -42,7 +93,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (Obras.Count == 0)
+                    @if (ObrasFiltradas == null || ObrasFiltradas.Count == 0)
+
                     {
                         <tr>
                             <td colspan="8" class="text-center text-muted py-4">No hay obras registradas.</td>
@@ -50,7 +102,7 @@
                     }
                     else
                     {
-                        @foreach (var o in Obras)
+                        @foreach (var o in ObrasFiltradas)
                         {
                             <tr data-obra-id="@o.Id">
                                 <td class="visually-hidden">@o.Id</td>
@@ -232,7 +284,134 @@
     private bool _cargandoEdicion = false;
     private List<GET_PresupuestoDTO> PresupuestosDelCliente { get; set; } = new();
 
-    // Lógica original restaurada para el selector de cliente
+    // Filtros
+    private string SearchCliente = string.Empty;
+    private string EstadoSeleccionado = string.Empty;
+
+    private List<GET_ObraDTO> ObrasFiltradas { get; set; } = new();
+
+    private string FiltroCliente = string.Empty;
+    private string FiltroEstado = string.Empty;
+
+    private DateTime? _filtroDesde;
+    private DateTime? _filtroHasta;
+
+    private DateTime? FiltroDesde
+    {
+        get => _filtroDesde;
+        set
+        {
+            _filtroDesde = value;
+            AplicarFiltros();
+        }
+    }
+
+    private DateTime? FiltroHasta
+    {
+        get => _filtroHasta;
+        set
+        {
+            _filtroHasta = value;
+            AplicarFiltros();
+        }
+    }
+
+    // Cache para no recalcular nombres en cada render (evita LINQ pesado por fila)
+    private Dictionary<int, string> _clienteNombreById = new();
+    private Dictionary<int, int> _clienteIdByPresupuestoId = new();
+
+    private void ConstruirCaches()
+    {
+        _clienteNombreById = Clientes.ToDictionary(
+            c => c.Id,
+            c => $"{c.Nombre} {c.Apellido}".Trim()
+        );
+
+        _clienteIdByPresupuestoId = Clientes
+            .SelectMany(c => (c.Presupuestos ?? new List<GET_PresupuestoDTO>())
+                .Select(p => new { p.Id, ClienteId = c.Id }))
+            .GroupBy(x => x.Id)
+            .ToDictionary(g => g.Key, g => g.First().ClienteId);
+    }
+
+    private string GetClienteNombreDeObra(GET_ObraDTO o)
+    {
+        // Primero: por PresupuestoId 
+        if (_clienteIdByPresupuestoId.TryGetValue(o.PresupuestoId, out var cliId))
+        {
+            if (_clienteNombreById.TryGetValue(cliId, out var nom))
+                return nom;
+        }
+
+        // Fallback por ClienteId directo
+        if (_clienteNombreById.TryGetValue(o.ClienteId, out var nom2))
+            return nom2;
+
+        return string.Empty;
+    }
+
+    private void AplicarFiltros()
+    {
+        IEnumerable<GET_ObraDTO> query = Obras;
+
+        
+        if (!string.IsNullOrWhiteSpace(FiltroCliente))
+        {
+            var s = FiltroCliente.Trim();
+            query = query.Where(o => GetClienteNombreDeObra(o)
+                .Contains(s, StringComparison.OrdinalIgnoreCase));
+        }
+
+        
+        if (!string.IsNullOrWhiteSpace(FiltroEstado))
+        {
+            query = query.Where(o => (o.EstadoObra ?? "")
+                .Equals(FiltroEstado, StringComparison.OrdinalIgnoreCase));
+        }
+
+        
+        if (FiltroDesde.HasValue)
+        {
+            var d = FiltroDesde.Value.Date;
+            query = query.Where(o => o.FechaInicio.Date >= d);
+        }
+
+        
+        if (FiltroHasta.HasValue)
+        {
+            var h = FiltroHasta.Value.Date;
+            query = query.Where(o => o.FechaInicio.Date <= h);
+        }
+
+        ObrasFiltradas = query.ToList();
+        StateHasChanged();
+    }
+
+    private void LimpiarFiltros()
+    {
+        FiltroCliente = string.Empty;
+        FiltroEstado = string.Empty;
+        FiltroDesde = null;
+        FiltroHasta = null;
+
+        ObrasFiltradas = Obras.ToList();
+        StateHasChanged();
+    }
+
+  
+    private void OnFiltroClienteInput(ChangeEventArgs e)
+    {
+        FiltroCliente = e?.Value?.ToString() ?? string.Empty;
+        AplicarFiltros();
+    }
+
+    private void OnFiltroEstadoChanged(ChangeEventArgs e)
+    {
+        FiltroEstado = e?.Value?.ToString() ?? string.Empty;
+        AplicarFiltros();
+    }
+
+   
     private int _selectedClientId;
     private int SelectedClientId
     {
@@ -282,7 +461,6 @@
         }
     }
 
-    // Lógica original restaurada para el selector de presupuesto
     private int _selectedPresupuestoId;
     private int SelectedPresupuestoId
     {
@@ -334,6 +512,20 @@
                 _cargandoEdicion = false;
             }
         }
+
+        ConstruirCaches();
+        ObrasFiltradas = Obras.ToList();
+      
+    }
+
+    private void LimpiarFiltrosObras()
+    {
+        SearchCliente = string.Empty;
+        EstadoSeleccionado = string.Empty;
+        FiltroDesde = null;
+        FiltroHasta = null;
+
+       
     }
 
     private async Task CargarDatosIniciales()
@@ -341,7 +533,7 @@
         Cargando = true;
         try
         {
-            // Cargamos todo junto para eficiencia
+           
             var t1 = ObraService.GetAllAsync();
             var t2 = ClienteService.GetAll();
             var t3 = PresupuestoService.GetAll();
@@ -355,7 +547,7 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error al cargar datos: {ex.Message}");
-            // Evitamos alert bloqueante en inicio
+            
         }
         finally
         {
@@ -378,7 +570,7 @@
 
         _selectedClientId = dto.ClienteId;
 
-        // Cargar presupuestos para el combo
+     
         var presupuestos = PresupuestosCache.Where(p => p.ClienteId == dto.ClienteId).ToList();
         if (!presupuestos.Any())
         {
@@ -495,7 +687,7 @@
 
     private string GetInfoPresupuesto(GET_PresupuestoDTO p)
     {
-        // Muestra Rubro y Total para que sea fácil de identificar
+        
         return $"{p.RubroNombre ?? "Sin Rubro"} (${p.Total:N0}) - {p.FechaCreacion:dd/MM/yy}";
     }
 
@@ -504,7 +696,7 @@
 
     public enum EstadoObra { Iniciada, EnProceso, Finalizada }
 
-    // Validaciones personalizadas que tenías
+ 
     private bool EsValorInvalido(int numero)
     {
         var numStr = numero.ToString();
