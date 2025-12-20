@@ -106,6 +106,9 @@
                                     else
                                     {
                                         <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => AbrirModalEditar(cliente)"><i class="bi bi-pencil-square"></i></button>
+                                        <button class="btn btn-sm btn-outline-info me-1" title="Historial Técnico" @onclick="() => AbrirHistorial(cliente.Id)">
+                                            <i class="bi bi-list-check"></i>
+                                        </button>
                                         <button class="btn btn-sm btn-outline-danger" title="Mover a Papelera" @onclick="() => EliminarCliente(cliente.Id)">
                                             <i class="bi bi-trash"></i>
                                         </button>
@@ -311,4 +314,11 @@
 
     private void CerrarModal() => MostrarModal = false;
     private void VolverAlInicio() => Navigation.NavigateTo("/");
+
+    // Agregar el método AbrirHistorial para corregir CS0103
+    private void AbrirHistorial(int clienteId)
+    {
+        // Redirige a la página de historial técnico del cliente
+        Navigation.NavigateTo($"/clientes/{clienteId}/historial");
+    }
 }

@@ -1,4 +1,5 @@
 ﻿using Zetta.Shared.DTOS.Cliente;
+using Zetta.Shared.DTOS.Historial;
 
 namespace Zetta.Client.Servicios
 {
@@ -12,5 +13,6 @@ namespace Zetta.Client.Servicios
         Task<List<GET_ClienteDTO>?> GetInactivos();
         Task Restaurar(int id);
         Task EliminarDefinitivamente(int id);
+        Task<List<HistorialTecnicoDTO>?> GetHistorialAsync(int clienteId);
     }
 }

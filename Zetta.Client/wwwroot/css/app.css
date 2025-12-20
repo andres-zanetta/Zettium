@@ -559,18 +559,117 @@ article {
             padding: 15px 0;
         }
 
-/* Botón de toggle */
-.sidebar-toggler {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-    transition: transform 0.3s;
+    /* Botón de toggle */
+    .sidebar-toggler {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+        transition: transform 0.3s;
+    }
+
+    /* Rotar botón al contraer */
+    .sidebar.collapsed .sidebar-toggler {
+        transform: rotate(180deg);
+        margin: 0 auto;
+    }
+
+
+/* =========================================================
+   14) HISTORIAL / TIMELINE (estilos agregados para ClienteHistorial)
+   ========================================================= */
+
+/* Contenedor general del timeline */
+.timeline {
+    padding: 0.6rem 0;
+    max-width: 1100px;
+    margin: 0 auto 1.5rem auto;
 }
 
-/* Rotar botón al contraer */
-.sidebar.collapsed .sidebar-toggler {
-    transform: rotate(180deg);
-    margin: 0 auto;
+/* Cada evento de la línea de tiempo */
+.timeline-item {
+    display: block;
+    background: #ffffff;                 /* tarjeta clara dentro del canvas blanco */
+    border-left: 4px solid var(--orange);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 0.9rem;
 }
+
+/* Ajuste de la card-body para timeline (usa estructura .card .card-body) */
+.timeline-item .card-body {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 0.85rem 1rem;
+    color: #222;
+}
+
+/* Icono redondo de la izquierda */
+.timeline-icon {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, var(--orange-hover), var(--orange-dark));
+    color: #fff;
+    font-size: 18px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* Metadatos pequeños (fecha) */
+.timeline-item .small.text-muted {
+    color: #6c757d;
+    font-size: 0.85rem;
+}
+
+/* Título y descripción */
+.timeline-item strong {
+    color: #111;
+    font-size: 1rem;
+}
+.timeline-item p {
+    color: #444;
+    margin: 0.35rem 0 0;
+    font-size: 0.95rem;
+    line-height: 1.25;
+}
+
+/* Badges dentro del timeline (tipo / estado) */
+.timeline-item .badge {
+    font-size: 0.72rem;
+    padding: 0.28rem 0.45rem;
+}
+
+/* Botón "Ver" pequeño */
+.timeline-item .btn-outline-primary {
+    border-color: var(--orange);
+    color: var(--orange);
+    background-color: transparent;
+}
+.timeline-item .btn-outline-primary:hover {
+    background-color: var(--orange);
+    color: #fff;
+}
+
+/* Mensaje vacío */
+.timeline-empty {
+    text-align: center;
+    color: #6c757d;
+    padding: 2rem 0;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+    .timeline-item .card-body { flex-direction: row; gap: 0.7rem; padding: 0.6rem; }
+    .timeline-icon { width:40px; height:40px; font-size:16px; }
+}
+
+/* =========================================================
+   FIN DEL ARCHIVO (mantener este comentario al final)
+   ========================================================= */

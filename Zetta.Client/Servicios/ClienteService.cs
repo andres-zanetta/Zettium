@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Json;
 using Zetta.Shared.DTOS.Cliente;
+using Zetta.Shared.DTOS.Historial;
 
 namespace Zetta.Client.Servicios
 {
@@ -23,6 +24,18 @@ namespace Zetta.Client.Servicios
             return await _httpClient.GetFromJsonAsync<GET_ClienteDTO>($"{BaseUrl}/{id}");
         }
 
+        public async Task<List<HistorialTecnicoDTO>?> GetHistorialAsync(int clienteId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<HistorialTecnicoDTO>>($"{BaseUrl}/{clienteId}/historial");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener historial: {ex.Message}");
+                return new List<HistorialTecnicoDTO>();
+            }
+        }
         public async Task Create(POST_ClienteDTO cliente)
         {
             var response = await _httpClient.PostAsJsonAsync(BaseUrl, cliente);
